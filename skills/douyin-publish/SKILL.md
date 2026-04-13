@@ -17,26 +17,26 @@ description: |
 
 ### 1. OpenCLI 已安装并运行
 
-`ash
+```bash
 # 检查 OpenCLI 状态
 opencli doctor
-`
+```
 
 必须全部通过：
 - ✅ Daemon: OK
 - ✅ Extension: Connected (Browser Bridge Chrome 扩展已加载)
 - ✅ Connectivity: OK
 
-如果 Extension 未连接，需要先在 Chrome 加载 Browser Bridge 扩展（通常在 ~/.opencli/extension/ 目录下）。
+如果 Extension 未连接，需要先在 Chrome 加载 Browser Bridge 扩展（通常在 `~/.opencli/extension/` 目录下）。
 
 ### 2. 抖音已登录
 
 浏览器中抖音账号必须已登录。可通过以下方式确认：
 
-`ash
+```bash
 opencli browser open https://www.douyin.com
 opencli state
-`
+```
 
 页面右上角应显示用户头像而非登录按钮。
 
@@ -44,20 +44,20 @@ opencli state
 
 ### Step 1: 导航到创作者中心
 
-`ash
-opencli browser open https://creator.douyin.com/creator-micro/content/post/article?enter_from=publish_page&media_type=article&type=new
-`
+```bash
+opencli browser open "https://creator.douyin.com/creator-micro/content/post/article?enter_from=publish_page&media_type=article&type=new"
+```
 
 等待 3-5 秒页面加载。
 
 ### Step 2: 获取页面状态
 
-`ash
+```bash
 opencli state
-`
+```
 
 确认页面包含以下元素：
-- 标题输入框（contenteditable，placeholder 提示请输入文章标题）
+- 标题输入框（contenteditable，placeholder 提示"请输入文章标题"）
 - 摘要输入框
 - 正文编辑区（contenteditable）
 - 文章头图区域
@@ -72,15 +72,15 @@ opencli state
 1. 从 state 输出中找到标题输入框的元素编号
 2. 点击聚焦：
 
-`ash
+```bash
 opencli click <标题元素编号>
-`
+```
 
 3. 清空已有内容（如有）并输入：
 
-`ash
-opencli type <标题元素编号> 你的标题文字
-`
+```bash
+opencli type <标题元素编号> "你的标题文字"
+```
 
 ### Step 4: 填写摘要
 
@@ -95,24 +95,24 @@ opencli type <标题元素编号> 你的标题文字
 1. 找到正文编辑区的 contenteditable 元素编号
 2. 点击聚焦：
 
-`ash
+```bash
 opencli click <正文元素编号>
-`
+```
 
 3. 等待 1 秒确保焦点到位
 4. 输入正文内容：
 
-`ash
-opencli type <正文元素编号> 正文内容...
-`
+```bash
+opencli type <正文元素编号> "正文内容..."
+```
 
 **注意：** 正文内容较长时，分多次输入可能更稳定。
 
 ### Step 6: 设置头图（可选）
 
-1. 找到AI配图按钮元素编号
+1. 找到"AI配图"按钮元素编号
 2. 点击后等待 AI 生成头图（约 3-5 秒）
-3. 如需换图，点击AI换图
+3. 如需换图，点击"AI换图"
 
 也可以上传本地图片：
 1. 找到头图上传区域
@@ -120,7 +120,7 @@ opencli type <正文元素编号> 正文内容...
 
 ### Step 7: 设置封面（可选但有推荐）
 
-1. 可点击同步头图为封面将头图同步为封面
+1. 可点击"同步头图为封面"将头图同步为封面
 2. 或上传自定义封面图
 
 **注意：** 实测文章类型即使不设置封面也能发布成功。
@@ -141,15 +141,15 @@ opencli type <正文元素编号> 正文内容...
 
 ### Step 10: 点击发布
 
-1. 找到发布按钮元素编号
+1. 找到"发布"按钮元素编号
 2. 点击发布：
 
-`ash
+```bash
 opencli click <发布按钮编号>
-`
+```
 
 3. 等待 3 秒确认发布结果
-4. 成功后页面会跳转到作品管理页，弹出审核通知
+4. 成功后页面会跳转到作品管理页，弹出"审核通知"
 
 ### Step 11: 关闭审核弹窗（可选）
 
@@ -159,9 +159,9 @@ opencli click <发布按钮编号>
 
 图文走不同的入口：
 
-`ash
-opencli browser open https://creator.douyin.com/creator-micro/content/upload?enter_from=dou_web
-`
+```bash
+opencli browser open "https://creator.douyin.com/creator-micro/content/upload?enter_from=dou_web"
+```
 
 图文约束：
 - 格式：jpg/jpeg/png/webp（不支持 gif）
@@ -173,15 +173,15 @@ opencli browser open https://creator.douyin.com/creator-micro/content/upload?ent
 
 ### 元素编号会变
 
-每次执行 opencli state 后，所有元素的编号会重新分配。**必须先 state 获取最新编号，再执行操作。** 不要复用旧的元素编号。
+每次执行 `opencli state` 后，所有元素的编号会重新分配。**必须先 state 获取最新编号，再执行操作。** 不要复用旧的元素编号。
 
 ### 页面可能跳转到 about:blank
 
 如果页面变为 about:blank，重新导航即可：
 
-`ash
-opencli browser open https://creator.douyin.com/creator-micro/content/post/article?enter_from=publish_page&media_type=article&type=new
-`
+```bash
+opencli browser open "https://creator.douyin.com/creator-micro/content/post/article?enter_from=publish_page&media_type=article&type=new"
+```
 
 ### contenteditable 输入
 
@@ -194,23 +194,23 @@ opencli browser open https://creator.douyin.com/creator-micro/content/post/artic
 
 ### Windows PowerShell 兼容
 
-Windows PowerShell 不支持 && 链式命令，需分开执行或使用 ;：
+Windows PowerShell 不支持 `&&` 链式命令，需分开执行或使用 `;`：
 
-`powershell
+```powershell
 # ❌ 错误
-opencli click 123 && opencli type 123 text
+opencli click 123 && opencli type 123 "text"
 
 # ✅ 正确
-opencli click 123; opencli type 123 text
-`
+opencli click 123; opencli type 123 "text"
+```
 
 ### 网络代理
 
 如果 GitHub 等海外网站访问不畅，需配置代理：
 
-`powershell
-=http://127.0.0.1:7890
-`
+```powershell
+$env:HTTPS_PROXY="http://127.0.0.1:7890"
+```
 
 ## 故障排除
 
