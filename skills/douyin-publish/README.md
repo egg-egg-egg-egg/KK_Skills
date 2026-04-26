@@ -1,59 +1,76 @@
-# douyin-publish 🎵
+# douyin-publish
 
-抖音文章/图文自动发布 Skill，基于 [OpenCLI](https://github.com/jackwener/OpenCLI) 浏览器自动化。
+抖音内容发布技能。支持视频定时发布（OpenCLI 内置命令）和文章/图文发布（浏览器自动化）。
 
 ## 功能
 
-- ✅ 发布抖音文章（长文，最多 8000 字）
-- ✅ 发布抖音图文（图片+文字，最多 35 张）
-- ✅ AI 自动配图 / 自定义头图
-- ✅ 封面设置
-- ✅ 话题标签（最多 5 个）
-- ✅ 发布权限与定时发布
+- **视频发布**：通过 `opencli douyin publish` 命令一键发布，支持定时发布、封面设置、话题标签、可见性控制
+- **文章发布**：通过浏览器自动化操作创作者中心，完成长文发布
+- **图文发布**：通过浏览器自动化操作创作者中心，完成图片+文字发布
 
-## 前置条件
+## 快速开始
 
-1. [OpenCLI](https://github.com/jackwener/OpenCLI) ≥ v1.7.3 已安装
-2. Browser Bridge Chrome 扩展已加载
-3. Chrome 浏览器中抖音已登录
+### 前置条件
 
-## 安装
+1. OpenCLI 已安装并运行（`opencli doctor` 全部通过）
+2. Chrome 浏览器已安装，Browser Bridge 扩展已启用
+3. 抖音账号已登录
 
-将此 skill 目录放入 OpenClaw skills 目录：
+### 安装
 
-\\\ash
-# 方式 1: 复制到 skills 目录
-cp -r douyin-publish ~/.openclaw/workspace/skills/
+```bash
+# Windows
+xcopy /E /I "douyin-publish" "%USERPROFILE%\.qclaw\skills\douyin-publish"
 
-# 方式 2: 符号链接
-ln -s C:\Users\Coder\.qclaw\workspace-agent-ca7a63c8/douyin-publish ~/.openclaw/workspace/skills/douyin-publish
-\\\
+# macOS/Linux
+cp -r douyin-publish ~/.qclaw/skills/
+```
 
-重启 Gateway 使 skill 生效。
+### 发布视频（推荐）
 
-## 使用
+```bash
+# 立即发布
+opencli douyin publish "C:\Videos\my_video.mp4" \
+  --title "AI不会替代人工" \
+  --caption "你觉得AI会抢走你的工作吗？ #AI #职场"
 
-在 OpenClaw 中说：
+# 定时发布（明天下午3点）
+opencli douyin publish "C:\Videos\my_video.mp4" \
+  --title "定时发布测试" \
+  --schedule "2026-04-27T15:00:00+08:00"
+```
 
-> 帮我发一篇抖音文章，标题是XXX，内容是XXX
+### 发布文章
 
-AI 会自动读取此 skill 的指引，通过 OpenCLI 控制浏览器完成发布全流程。
+```bash
+# 导航到创作者中心
+opencli browser open "https://creator.douyin.com/creator-micro/content/post/article?enter_from=publish_page&media_type=article&type=new"
 
-## 流程概览
+# 然后按照 SKILL.md 中的步骤填写内容
+```
 
-1. 检查 OpenCLI 连通性（opencli doctor）
-2. 导航到抖音创作者中心
-3. 填写标题（≤30字）、摘要（≤30字）、正文（≤8000字）
-4. 可选：设置头图/AI配图、封面、话题、配乐
-5. 点击发布
+## 文件说明
 
-详细流程见 [SKILL.md](./SKILL.md)。
+| 文件 | 说明 |
+|------|------|
+| `SKILL.md` | 技能主文档，包含完整使用说明和详细参数 |
+| `scripts/check_env.py` | 环境检查脚本 |
+| `README.md` | 本文件 |
 
-## 注意事项
+## 发布方式对比
 
-- 元素编号每次 state 后会变，操作前必须重新获取
-- Windows PowerShell 不支持 \&&\，用 \;\ 代替
-- contenteditable 元素需先 click 聚焦再 type 输入
+| 内容类型 | 方式 | 稳定性 | 复杂度 |
+|----------|------|--------|--------|
+| 视频 | `opencli douyin publish` | ⭐⭐⭐ 高 | 低，参数化配置 |
+| 文章 | 浏览器自动化 | ⭐⭐ 中 | 中，需操作 DOM |
+| 图文 | 浏览器自动化 | ⭐⭐ 中 | 中，需操作 DOM |
+
+## 依赖
+
+- [OpenCLI](https://github.com/jackwener/OpenCLI) ≥ v1.7.7
+- Python 3.7+
+- Chrome 浏览器 + Browser Bridge 扩展
+- 抖音账号（已登录）
 
 ## License
 

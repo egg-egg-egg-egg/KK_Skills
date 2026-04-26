@@ -1,258 +1,256 @@
 ---
 name: douyin-publish
 description: |
-  抖音文章/图文发布技能。通过 OpenCLI 控制浏览器，自动化完成抖音创作者中心的文章发布流程。
-  当用户要求发抖音、发布文章到抖音、抖音发文、写抖音文章等意图时触发此 skill。
-  依赖 OpenCLI（Browser Bridge 扩展 + Daemon）实现浏览器自动化。
+  抖音内容发布技能。支持视频定时发布（OpenCLI 内置命令）和文章/图文发布（浏览器自动化）。
+  当用户要求发抖音、发布视频到抖音、抖音发文、写抖音文章、定时发布等意图时触发此 skill。
+  依赖 OpenCLI（≥v1.7.7，含 Browser Bridge 扩展 + Daemon）。
 ---
 
-# 抖音文章发布
+# 抖音内容发布
 
 ## 概述
 
-通过 OpenCLI 的浏览器控制能力，自动化操作抖音创作者中心，完成文章发布全流程。
-支持：发布文章（长文）、发布图文（图片+文字）。
+根据内容类型选择最优发布方式：
 
-## 发布策略
-
-### 默认模式：半自动（推荐）
-
-AI 负责完成所有内容填写工作，**最后一步"点击发布"交给用户自己操作**。
-
-理由：让用户有参与感，可以在发布前最后检查一遍内容。同时也避免 AI 误操作发布未完成的内容。
-
-流程：
-1. AI 完成标题、摘要、正文、配图等所有填写
-2. AI 告知用户："内容已全部填好，请你在浏览器上检查并点击发布按钮"
-3. 用户自行检查并点击发布
-
-### 全自动模式
-
-如果用户明确说"帮我发出去"、"直接发布"、"全自动"等，AI 可以代为点击发布按钮。
-
-详见 [Step 10: 发布](#step-10-发布)。
+| 内容类型 | 推荐方式 | 说明 |
+|----------|----------|------|
+| **视频** | `opencli douyin publish` 命令 | 参数化配置，稳定可靠，支持定时发布 |
+| **文章/图文** | 浏览器自动化（OpenCLI state/click/type） | 需操作创作者中心页面，详见 [文章发布详情](#文章发布详情) |
 
 ## 前置条件
 
-### 1. OpenCLI 已安装并运行
-
 ```bash
-# 检查 OpenCLI 状态
 opencli doctor
 ```
 
 必须全部通过：
 - ✅ Daemon: OK
-- ✅ Extension: Connected (Browser Bridge Chrome 扩展已加载)
+- ✅ Extension: Connected
 - ✅ Connectivity: OK
 
-如果 Extension 未连接，需要先在 Chrome 加载 Browser Bridge 扩展（通常在 `~/.opencli/extension/` 目录下）。
+## 一、视频发布（推荐方式）
 
-### 2. 抖音已登录
-
-浏览器中抖音账号必须已登录。可通过以下方式确认：
+### 快速发布
 
 ```bash
-opencli browser open https://www.douyin.com
-opencli state
+opencli douyin publish "<视频文件路径>" --title "标题" --caption "正文内容 #话题"
 ```
 
-页面右上角应显示用户头像而非登录按钮。
+**必填参数：**
+- `video` — 视频文件路径（本地文件）
+- `--title` — 标题，≤30字
 
-## 发布文章流程
+**常用可选参数：**
 
-### Step 1: 导航到创作者中心
+| 参数 | 说明 | 默认值 |
+|------|------|--------|
+| `--caption` | 正文内容，≤1000字，支持 `#话题` | `""` |
+| `--cover` | 封面图片路径（不提供则自动截帧） | `""` |
+| `--visibility` | 可见性：`public`/`friends`/`private` | `public` |
+| `--schedule` | 定时发布时间（ISO8601 或 Unix 秒，2h~14天后） | 立即发布 |
+| `--allow_download` | 允许下载：`true`/`false` | `false` |
+| `--sync_toutiao` | 同步发布到头条：`true`/`false` | `false` |
+
+### 完整参数查询
+
+如需查看全部参数和高级用法：
+
+```bash
+opencli douyin publish -h
+```
+
+### 发布示例
+
+**立即发布：**
+
+```bash
+opencli douyin publish "C:\Videos\my_video.mp4" \
+  --title "AI不会替代人工，反而让普通人快速掌握技能" \
+  --caption "你觉得AI会抢走你的工作吗？评论区聊聊 #AI #职场 #技能提升" \
+  --visibility public
+```
+
+**定时发布（明天下午3点）：**
+
+```bash
+opencli douyin publish "C:\Videos\my_video.mp4" \
+  --title "定时发布测试" \
+  --schedule "2026-04-27T15:00:00+08:00" \
+  --visibility public
+```
+
+**带封面+话题+禁止下载：**
+
+```bash
+opencli douyin publish "C:\Videos\my_video.mp4" \
+  --title "白银涨价了，套利机会分析" \
+  --caption "最近白银涨了不少，分享一个套利思路 #白银 #投资 #套利" \
+  --cover "C:\Images\cover.png" \
+  --allow_download false \
+  --visibility public
+```
+
+### 输出结果
+
+成功发布后返回：
+
+```
+status    aweme_id              url                                    publish_time
+────────  ────────────────────  ─────────────────────────────────────  ────────────
+success   7620109115684354021   https://www.douyin.com/video/7620...   2026-04-26T09:30:00+08:00
+```
+
+JSON 格式：`--format json`
+
+## 二、文章/图文发布（浏览器自动化）
+
+当用户要求发布文章（长文）或图文（图片+文字）时，使用浏览器自动化方案。
+
+### 快速流程
+
+```bash
+# 1. 导航到创作者中心文章发布页
+opencli browser open "https://creator.douyin.com/creator-micro/content/post/article?enter_from=publish_page&media_type=article&type=new"
+
+# 2. 等待页面加载
+opencli wait 3s
+
+# 3. 获取页面元素编号
+opencli state
+
+# 4. 依次填写标题、摘要、正文（先 click 聚焦，再 type 输入）
+#    标题≤30字，摘要≤30字，正文≤8000字
+
+# 5. 可选：设置头图、封面、话题
+
+# 6. 发布（默认交给用户点击，全自动需用户明确授权）
+```
+
+### 详细操作说明
+
+如需完整的元素操作细节、故障排除、注意事项：
+
+**→ 查看 [文章发布详情](#文章发布详情)**
+
+---
+
+## 文章发布详情
+
+### 发布策略
+
+**默认模式：半自动（推荐）**
+
+AI 完成所有内容填写，**最后一步"点击发布"交给用户**。
+
+流程：
+1. AI 完成标题、摘要、正文、配图等所有填写
+2. AI 告知用户："内容已全部填好，请在浏览器上检查并点击发布按钮"
+3. 用户自行检查并点击发布
+
+**全自动模式**
+
+用户明确说"帮我发出去"、"直接发布"、"全自动"时，AI 代为点击发布按钮。
+
+### Step-by-Step 操作
+
+#### Step 1: 导航
 
 ```bash
 opencli browser open "https://creator.douyin.com/creator-micro/content/post/article?enter_from=publish_page&media_type=article&type=new"
 ```
 
-等待 3-5 秒页面加载。
-
-### Step 2: 获取页面状态
+#### Step 2: 获取页面状态
 
 ```bash
 opencli state
 ```
 
-确认页面包含以下元素：
-- 标题输入框（contenteditable，placeholder 提示"请输入文章标题"）
-- 摘要输入框
-- 正文编辑区（contenteditable）
-- 文章头图区域
-- 封面设置区域
-- 话题添加
-- 发布按钮
+确认包含：标题输入框、摘要输入框、正文编辑区、发布按钮。
 
-### Step 3: 填写标题
-
-**约束：标题最多 30 字。**
-
-1. 从 state 输出中找到标题输入框的元素编号
-2. 点击聚焦：
+#### Step 3: 填写标题（≤30字）
 
 ```bash
 opencli click <标题元素编号>
+opencli type <标题元素编号> "标题文字"
 ```
 
-3. 清空已有内容（如有）并输入：
+#### Step 4: 填写摘要（≤30字）
 
 ```bash
-opencli type <标题元素编号> "你的标题文字"
+opencli click <摘要元素编号>
+opencli type <摘要元素编号> "摘要文字"
 ```
 
-### Step 4: 填写摘要
-
-**约束：摘要最多 30 字。**
-
-同理，找到摘要输入框元素编号，点击聚焦后输入。
-
-### Step 5: 填写正文
-
-**约束：正文最多 8000 字。**
-
-1. 找到正文编辑区的 contenteditable 元素编号
-2. 点击聚焦：
+#### Step 5: 填写正文（≤8000字）
 
 ```bash
 opencli click <正文元素编号>
-```
-
-3. 等待 1 秒确保焦点到位
-4. 输入正文内容：
-
-```bash
 opencli type <正文元素编号> "正文内容..."
 ```
 
-**注意：** 正文内容较长时，分多次输入可能更稳定。
+**注意：** contenteditable 元素需先 click 聚焦，等待 1 秒后再 type。
 
-### Step 6: 设置头图（可选）
+#### Step 6: 设置头图（可选）
 
-1. 找到"AI配图"按钮元素编号
-2. 点击后等待 AI 生成头图（约 3-5 秒）
-3. 如需换图，点击"AI换图"
+找到"AI配图"按钮点击，等待 3-5 秒生成。
 
-也可以上传本地图片：
-1. 找到头图上传区域
-2. 使用文件上传操作
+#### Step 7: 设置封面（可选）
 
-### Step 7: 设置封面（可选但有推荐）
+点击"同步头图为封面"或上传自定义封面。实测文章类型不设置封面也能发布。
 
-1. 可点击"同步头图为封面"将头图同步为封面
-2. 或上传自定义封面图
+#### Step 8: 添加话题（可选，最多5个）
 
-**注意：** 实测文章类型即使不设置封面也能发布成功。
+在话题区域输入关键词，从下拉建议中选择。
 
-### Step 8: 添加话题（可选）
+#### Step 9: 发布
 
-**约束：最多 5 个话题。**
+**半自动（默认）：**
 
-1. 找到话题添加区域
-2. 输入话题关键词
-3. 从下拉建议中选择匹配话题
+内容填好后告知用户检查并手动点击发布。
 
-### Step 9: 发布设置
-
-默认为公开 + 立即发布，如需修改：
-- 谁可以看：公开 / 好友可见 / 仅自己可见
-- 发布时间：立即发布 / 定时发布
-
-### Step 10: 发布
-
-**默认行为（半自动）：**
-
-内容全部填好后，告知用户：
-
-> 内容已全部填好，包括标题、摘要、正文。请你在浏览器上检查一下，确认无误后点击发布按钮。
-
-**全自动模式（用户明确要求时）：**
-
-1. 找到"发布"按钮元素编号
-2. 点击发布：
+**全自动（用户明确要求）：**
 
 ```bash
 opencli click <发布按钮编号>
 ```
 
-3. 等待 3 秒确认发布结果
-4. 成功后页面会跳转到作品管理页，弹出"审核通知"
-
-### Step 11: 关闭审核弹窗（可选，全自动模式）
-
-如需继续操作，找到弹窗关闭按钮并点击。
-
-## 发布图文流程
-
-图文走不同的入口：
+### 发布图文入口
 
 ```bash
 opencli browser open "https://creator.douyin.com/creator-micro/content/upload?enter_from=dou_web"
 ```
 
-图文约束：
-- 格式：jpg/jpeg/png/webp（不支持 gif）
-- 单张 ≤ 50MB
-- 最多 35 张
-- 宽高比推荐 3:4 或 4:3
+图文约束：jpg/jpeg/png/webp，单张≤50MB，最多35张，宽高比推荐 3:4 或 4:3。
 
-## ⚠️ 关键注意事项
+### ⚠️ 关键注意事项
 
-### 元素编号会变
-
-每次执行 `opencli state` 后，所有元素的编号会重新分配。**必须先 state 获取最新编号，再执行操作。** 不要复用旧的元素编号。
-
-### 页面可能跳转到 about:blank
-
-如果页面变为 about:blank，重新导航即可：
-
-```bash
-opencli browser open "https://creator.douyin.com/creator-micro/content/post/article?enter_from=publish_page&media_type=article&type=new"
-```
-
-### contenteditable 输入
-
-标题、摘要、正文都是 contenteditable 元素，操作模式：
-1. 先 click 聚焦
-2. 等待 1 秒
-3. 再 type 输入内容
-
-如果 type 失败，重新 click 聚焦再试。
-
-### Windows PowerShell 兼容
-
-Windows PowerShell 不支持 `&&` 链式命令，需分开执行或使用 `;`：
-
-```powershell
-# ❌ 错误
-opencli click 123 && opencli type 123 "text"
-
-# ✅ 正确
-opencli click 123; opencli type 123 "text"
-```
+| 问题 | 解决方案 |
+|------|----------|
+| 元素编号会变 | 每次操作前重新 `opencli state` |
+| 页面变成 about:blank | 重新 `opencli browser open` 导航 |
+| type 输入失败 | 先 click 聚焦，等 1 秒再 type |
+| PowerShell 链式命令 | 用 `;` 代替 `&&` |
+| 未登录 | 先在浏览器手动登录抖音 |
 
 ### 网络代理
-
-如果 GitHub 等海外网站访问不畅，需配置代理：
 
 ```powershell
 $env:HTTPS_PROXY="http://127.0.0.1:7890"
 ```
 
-## 故障排除
+## 三、故障排除
 
-| 问题 | 解决方案 |
-|------|----------|
-| opencli doctor 显示 Extension 未连接 | 检查 Chrome 是否加载了 Browser Bridge 扩展 |
-| 页面未登录 | 先在浏览器手动登录抖音 |
-| 元素编号找不到 | 重新执行 opencli state |
-| type 输入失败 | 先 click 聚焦，等 1 秒再 type |
-| 页面变成 about:blank | 重新 opencli browser open 导航 |
-| 发布按钮点击无反应 | 检查必填项是否完成（标题、正文） |
+| 现象 | 原因 | 解决 |
+|------|------|------|
+| `opencli douyin publish` 报错 | 视频格式/大小不符，或未到定时发布时间 | 检查视频格式（mp4/webm，≤16G），确认 schedule 在 2h~14d 范围内 |
+| Extension 未连接 | Browser Bridge 扩展未加载 | 检查 Chrome 扩展状态 |
+| 文章发布按钮无反应 | 必填项未完成 | 确认标题、正文已填写 |
+| 定时发布未生效 | 时间不在 2h~14d 范围内 | 调整 schedule 时间 |
 
 ## 依赖
 
-- **OpenCLI** ≥ v1.7.3 — 核心浏览器控制工具
-- **Browser Bridge Chrome 扩展** — OpenCLI 的浏览器桥接
+- **OpenCLI** ≥ v1.7.7 — 核心工具（内置 `douyin publish`）
+- **Browser Bridge Chrome 扩展** — 浏览器自动化所需
 - **Chrome 浏览器** — 已安装并保持打开
 - **抖音账号** — 已登录状态
+- **视频文件** — 发布视频时需提供本地文件
