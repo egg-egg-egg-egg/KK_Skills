@@ -1,16 +1,16 @@
 ---
 name: douyin-comments
 description: |
-  抖音笔记评论区抓取技能。通过 OpenCLI 控制浏览器，抓取抖音笔记/视频的评论区内容，结构化输出并自动保存为 JSON 文件。
+  抖音评论区抓取技能。通过 OpenCLI 内置的 douyin 工具，一键抓取抖音视频/笔记的评论区数据，结构化输出为 JSON 文件。
   当用户要求"抓抖音评论"、"获取评论"、"爬取评论区"、"导出评论数据"等意图时触发此 skill。
-  依赖 OpenCLI（Browser Bridge 扩展 + Daemon）实现浏览器自动化。
+  依赖 OpenCLI（≥v1.7.7，含 Browser Bridge 扩展 + Daemon）实现浏览器自动化。
 ---
 
 # 抖音评论抓取
 
 ## 概述
 
-通过 OpenCLI 的浏览器控制能力，自动化抓取抖音笔记/视频页面的评论区数据，提取评论内容、用户名、点赞数、时间等信息，结构化保存为 JSON 文件。
+通过 OpenCLI 内置的 `douyin` 工具集，自动化抓取抖音视频/笔记的评论区数据，提取评论内容、用户名、点赞数等信息，结构化保存为 JSON 文件。
 
 ## 前置条件
 
@@ -29,174 +29,209 @@ opencli doctor
 
 浏览器中抖音账号必须已登录。未登录状态下评论内容可能受限。
 
-## 抓取流程
+## 抓取方式
 
-### Step 1: 打开目标页面
+### 方式一：单条视频/笔记评论（推荐）
 
-支持两种 URL 格式：
-
-```bash
-# 笔记（图文）
-opencli browser open "https://www.douyin.com/note/<笔记ID>"
-
-# 视频
-opencli browser open "https://www.douyin.com/video/<视频ID>"
-```
-
-等待 3-5 秒页面加载完成。
-
-### Step 2: 获取页面状态
+直接通过 URL 抓取指定视频/笔记的评论：
 
 ```bash
-opencli state
+opencli douyin comments --url "<视频/笔记URL>" --limit <数量> --format json
 ```
 
-从 state 输出中提取以下信息：
+**参数说明：**
+- `--url`: 视频或笔记链接，支持 `https://www.douyin.com/video/<id>` 或 `https://www.douyin.com/note/<id>`
+- `--limit`: 最多抓取多少条评论（默认 0 = 不限）
+- `--maxExpand`: 展开子回复的最大数量（默认 10）
+- `--scrolls`: 滚动加载次数（默认 30）
+- `--format json`: 输出 JSON 格式
 
-**作品基本信息：**
-- 标题/正文内容
-- 作者昵称
-- 点赞数、评论数、分享数
-
-**评论区数据：**
-- 评论区通常在页面右侧面板或弹窗中
-- 每条评论包含：用户名、评论内容、点赞数、回复数、发布时间
-
-### Step 3: 滚动加载更多评论
-
-评论区是懒加载的，需要滚动来加载更多评论。
-
-1. 找到评论区容器的元素编号
-2. 向下滚动评论区：
+**示例：**
 
 ```bash
-opencli scroll <评论区元素编号> down
+opencli douyin comments --url "https://www.douyin.com/video/7620109115684354021" --limit 50 --format json
 ```
 
-3. 等待 2-3 秒让新评论加载
-4. 再次 `opencli state` 获取新加载的评论
-5. 重复直到评论不再新增（或达到目标数量）
-
-**注意：** 抖音网页版通常一次显示约 20-30 条评论，需要多次滚动才能获取更多。
-
-### Step 4: 解析评论数据
-
-从 state 输出中，按以下结构解析每条评论：
-
-```
-- 用户名
-- 评论内容
-- 点赞数
-- 回复数
-- 发布时间
-```
-
-评论区 DOM 中，评论通常包含以下模式：
-- 用户名通常在评论块的顶部
-- 评论正文紧随用户名
-- 点赞数通常有"赞"相关标识
-- 回复数如有会标注"N条回复"
-
-### Step 5: 构建结构化数据
-
-将解析出的评论整理为以下 JSON 结构：
+**输出示例：**
 
 ```json
 {
-  "url": "https://www.douyin.com/note/7620109115684354021",
-  "title": "文章标题或正文摘要",
-  "author": "作者昵称",
-  "stats": {
-    "likes": 11000,
-    "comments": 110,
-    "shares": 6
+  "url": "https://www.douyin.com/video/7620109115684354021",
+  "video": {
+    "title": "视频标题",
+    "author": "作者昵称",
+    "url": "https://www.douyin.com/video/7620109115684354021"
   },
+  "total_scraped": 50,
+  "has_more": true,
   "comments": [
     {
       "user": "用户名",
-      "content": "评论正文内容",
+      "content": "评论内容",
+      "time": "3小时前",
       "likes": 123,
-      "replies": 5,
-      "time": "3小时前"
-    },
-    {
-      "user": "另一个用户",
-      "content": "另一条评论",
-      "likes": 45,
-      "replies": 0,
-      "time": "昨天"
+      "replies": 5
     }
   ],
-  "total_comments": 30,
-  "scraped_at": "2026-04-14T03:30:00+08:00"
+  "scraped_at": "2026-04-26T09:20:00+08:00"
 }
 ```
 
-### Step 6: 保存为 JSON 文件
+### 方式二：批量获取用户视频 + 热门评论
 
-使用 Python 将结构化数据保存为 JSON 文件：
+获取指定用户的视频列表，同时附带每条视频的热门评论：
 
 ```bash
-python scripts/save_comments.py --data '<JSON字符串>' --output '<保存路径>'
+opencli douyin user-videos <sec_uid> --limit <数量> --with_comments true --comment_limit <每条视频评论数> --format json
 ```
 
-**默认保存路径：** 当前工作目录下，文件名格式 `douyin_comments_<笔记ID>_<时间戳>.json`
+**参数说明：**
+- `sec_uid`: 用户 sec_uid（可从 `opencli douyin profile` 获取）
+- `--limit`: 获取视频数量（最大 20）
+- `--with_comments`: 是否包含热门评论（默认 true）
+- `--comment_limit`: 每条视频获取多少条评论（最大 10）
 
-例如：`douyin_comments_7620109115684354021_20260414_033000.json`
+**获取当前登录用户的 sec_uid：**
 
-### Step 7: 汇报结果
+```bash
+opencli douyin profile --format json
+```
 
-抓取完成后，向用户汇报：
+**示例输出：**
 
-1. 作品基本信息（标题、作者、互动数据）
-2. 抓取到的评论总数
-3. 保存的 JSON 文件路径
-4. 如有评论趋势或亮点，简要总结
+```json
+[
+  {
+    "uid": "59332272778",
+    "nickname": "刚上课就",
+    "follower_count": 75,
+    "following_count": 245,
+    "aweme_count": 18
+  }
+]
+```
+
+**批量获取视频 + 评论示例：**
+
+```bash
+opencli douyin user-videos "59332272778" --limit 10 --with_comments true --comment_limit 5 --format json
+```
+
+**输出示例：**
+
+```json
+[
+  {
+    "index": 1,
+    "aweme_id": "7632538845397093617",
+    "title": "视频标题",
+    "duration": 0,
+    "digg_count": 11,
+    "play_url": "https://...",
+    "top_comments": [
+      {
+        "text": "评论内容",
+        "digg_count": 0,
+        "nickname": "用户名"
+      }
+    ]
+  }
+]
+```
+
+## 保存为 JSON 文件
+
+抓取完成后，使用内置脚本保存为 JSON 文件：
+
+```bash
+# 方式一：单条视频评论
+opencli douyin comments --url "<URL>" --limit 50 --format json > comments_raw.json
+python scripts/save_comments.py --input comments_raw.json --output "./douyin_comments_<id>.json"
+
+# 方式二：批量视频+评论
+opencli douyin user-videos "<sec_uid>" --limit 10 --with_comments true --format json > videos_raw.json
+python scripts/save_comments.py --input videos_raw.json --output "./douyin_videos_<sec_uid>.json"
+```
+
+**默认保存路径：** 当前工作目录下，文件名格式 `douyin_comments_<id>_<时间戳>.json`
+
+## 完整工作流示例
+
+### 场景：抓取单条视频的全部评论
+
+```bash
+# 1. 确认 OpenCLI 状态
+opencli doctor
+
+# 2. 抓取评论
+opencli douyin comments --url "https://www.douyin.com/video/7620109115684354021" --limit 100 --format json > /tmp/comments.json
+
+# 3. 保存为结构化文件
+python scripts/save_comments.py --input /tmp/comments.json
+
+# 4. 汇报结果
+cat douyin_comments_7620109115684354021_*.json | python -m json.tool
+```
+
+### 场景：批量抓取用户近期视频的热门评论
+
+```bash
+# 1. 获取用户 sec_uid
+opencli douyin profile --format json
+
+# 2. 批量抓取视频+评论
+opencli douyin user-videos "59332272778" --limit 20 --with_comments true --comment_limit 10 --format json > /tmp/videos.json
+
+# 3. 保存
+python scripts/save_comments.py --input /tmp/videos.json --output "./user_videos_comments.json"
+```
+
+## 输出字段说明
+
+### 单条评论（comments 模式）
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| user | string | 评论用户昵称 |
+| content | string | 评论正文 |
+| time | string | 发布时间（相对时间，如"3小时前"） |
+| likes | number | 点赞数 |
+| replies | number | 回复数 |
+
+### 视频信息（user-videos 模式）
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| aweme_id | string | 视频/笔记 ID |
+| title | string | 标题/正文摘要 |
+| digg_count | number | 点赞数 |
+| play_url | string | 播放地址 |
+| top_comments | array | 热门评论列表 |
 
 ## 技巧与最佳实践
 
 ### 提高评论覆盖率
 
-- 抖音网页版评论区一次约加载 20-30 条
-- 建议至少滚动 3-5 次获取代表性样本
-- 如果评论数超过 100，可询问用户是否需要全部抓取（会比较耗时）
+- `--scrolls` 默认 30 次，约可加载 200-300 条评论
+- 如需更多，增加 `--scrolls` 值（如 `--scrolls 100`）
+- 评论数过多时建议设置 `--limit` 上限避免耗时过长
 
-### 处理评论区的子回复
+### 处理笔记（note）类型
 
-部分评论有子回复（楼中楼），默认只抓取一级评论。如需抓取子回复：
-1. 找到"N条回复"元素
-2. 点击展开
-3. 重新获取 state 解析子评论
+部分笔记页面的评论区 DOM 结构与视频不同，如果 `comments` 命令返回空或报错，可尝试：
+1. 先用 `opencli browser open` 打开笔记页面
+2. 手动滚动评论区加载内容
+3. 再执行 `opencli douyin comments --url <url>`
 
 ### 评论排序
 
-抖音评论区默认按热度排序。如需按时间排序：
-1. 找到评论区排序切换按钮
-2. 点击切换到"按时间排序"
-
-### 去重
-
-多次 state 获取的评论可能有重叠，需按评论内容或用户名+时间进行去重。
+默认按热度排序。如需按时间排序，先手动在页面切换排序方式，再执行抓取命令。
 
 ## ⚠️ 关键注意事项
 
-### 元素编号会变
+### 元素编号会变（仅手动操作时）
 
-每次执行 `opencli state` 后，所有元素的编号会重新分配。**必须先 state 获取最新编号，再执行操作。**
-
-### 页面可能跳转到 about:blank
-
-如果页面变为 about:blank，重新导航即可。
-
-### Windows PowerShell 兼容
-
-```powershell
-# ❌ 错误
-opencli scroll 123 && opencli state
-
-# ✅ 正确
-opencli scroll 123; opencli state
-```
+如果使用 `opencli browser open` + `opencli state` 手动操作，每次 state 后元素编号会重新分配。**使用内置 `douyin` 命令时无需关心此问题。**
 
 ### 网络代理
 
@@ -204,18 +239,24 @@ opencli scroll 123; opencli state
 $env:HTTPS_PROXY="http://127.0.0.1:7890"
 ```
 
+### 抖音反爬
+
+- 频繁抓取可能触发验证码或限流
+- 建议抓取间隔 ≥ 5 秒
+- 单次抓取评论数建议不超过 500 条
+
 ## 故障排除
 
 | 问题 | 解决方案 |
 |------|----------|
-| 评论区不加载 | 检查是否已登录，尝试刷新页面 |
-| 滚动后没有新评论 | 可能已到底部，或页面加载超时 |
-| 评论内容不完整 | 等待更长时间让懒加载完成 |
-| 保存 JSON 失败 | 检查文件路径权限，JSON 格式是否正确 |
+| `total_scraped: 0` | 检查是否已登录；笔记类型可能不支持，尝试视频 URL |
+| 评论内容不完整 | 增加 `--scrolls` 值；检查页面是否加载完成 |
+| `Extension not connected` | 确认 Browser Bridge 扩展已启用并刷新页面 |
+| 返回空数组 | 该视频可能没有评论，或评论区未加载 |
 
 ## 依赖
 
-- **OpenCLI** ≥ v1.7.3 — 核心浏览器控制工具
+- **OpenCLI** ≥ v1.7.7 — 核心工具（内置 `douyin` 命令）
 - **Browser Bridge Chrome 扩展** — OpenCLI 的浏览器桥接
 - **Chrome 浏览器** — 已安装并保持打开
 - **抖音账号** — 已登录状态
