@@ -60,8 +60,8 @@ ln -s ~/KK_Skills/skills/douyin-publish ~/.openclaw/workspace/skills/douyin-publ
 
 | Skill | 说明 | 依赖 |
 |-------|------|------|
-| [douyin-publish](./skills/douyin-publish/) | 抖音文章/图文发布，支持AI配图、话题、定时发布 | OpenCLI + Browser Bridge |
-| [douyin-comments](./skills/douyin-comments/) | 抖音笔记评论区抓取，结构化输出并保存为 JSON | OpenCLI + Browser Bridge |
+| [douyin-publish](./skills/douyin-publish/) | 抖音内容管理全生命周期：发布/草稿/删除/更新/作品列表/数据分析 + 话题/POI/活动/合集策略 | OpenCLI ≥ v1.7.8 |
+| [douyin-comments](./skills/douyin-comments/) | 抖音视频/笔记评论区抓取，批量用户视频+热门评论，结构化 JSON 输出 | OpenCLI ≥ v1.7.8 |
 
 ## 目录结构
 
@@ -82,11 +82,12 @@ KK_Skills/
 
 ## 依赖说明
 
-部分 Skill 依赖 [OpenCLI](https://github.com/jackwener/OpenCLI)（浏览器自动化工具）。
+部分 Skill 依赖 [OpenCLI](https://github.com/jackwener/OpenCLI)（浏览器自动化工具）≥ v1.7.8。
 
-安装 OpenCLI：
+安装/更新 OpenCLI：
 ```bash
 npm install -g @jackwener/opencli
+opencli --version  # 确认版本 ≥ v1.7.8
 ```
 
 安装后需在 Chrome 加载 Browser Bridge 扩展（通常在 `~/.opencli/extension/`），然后运行 `opencli doctor` 确认状态正常。
