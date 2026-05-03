@@ -1,12 +1,13 @@
 # douyin-comments
 
-抖音评论区抓取技能。通过 OpenCLI 内置的 `douyin` 工具集，一键抓取抖音视频/笔记的评论区数据。
+抖音评论区抓取技能。双轨架构：视频评论用 OpenCLI，文章/图文评论用 agent-browser。
 
 ## 功能
 
-- **单条视频/笔记评论抓取**：通过 URL 直接抓取指定作品的全部评论
-- **批量用户视频+评论**：获取用户近期视频列表及每条视频的热门评论
-- **结构化输出**：自动保存为 JSON 文件，包含评论内容、用户名、点赞数、时间等
+- **单条视频评论抓取**：通过 URL 直接抓取指定视频的全部评论（OpenCLI）
+- **批量用户视频+评论**：获取用户近期视频列表及每条视频的热门评论（OpenCLI）
+- **文章/图文评论抓取**：通过 agent-browser + Edge 登录态采集文章评论（浏览器自动化）
+- **结构化输出**：自动保存为 JSON 或 Markdown 文件，包含评论内容、用户名、点赞数、时间等
 
 ## 快速开始
 
@@ -48,12 +49,20 @@ opencli douyin user-videos "59332272778" --limit 10 --with_comments true --comme
 python scripts/save_comments.py --input /tmp/videos.json
 ```
 
+**抓取文章/图文评论：**
+
+```bash
+python scripts/scrape_article_comments.py --url "https://www.douyin.com/article/7633534116155149620"
+python scripts/scrape_article_comments.py --url "<url>" --format json --output ./comments.json
+```
+
 ## 文件说明
 
 | 文件 | 说明 |
 |------|------|
 | `SKILL.md` | 技能主文档，包含完整使用说明 |
 | `scripts/save_comments.py` | JSON 保存脚本，将 opencli 输出保存为结构化文件 |
+| `scripts/scrape_article_comments.py` | 文章评论采集脚本，封装 agent-browser 自动化流程 |
 | `README.md` | 本文件 |
 
 ## 输出格式

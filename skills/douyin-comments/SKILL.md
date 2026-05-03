@@ -185,6 +185,25 @@ import re, json
 # 点赞数: r'^(\d+)$(?=\n.*分享.*回复)'
 ```
 
+### 一键脚本
+
+以上步骤已封装为 `scripts/scrape_article_comments.py`：
+
+```bash
+python scripts/scrape_article_comments.py --url "https://www.douyin.com/article/<id>"
+python scripts/scrape_article_comments.py --url "<url>" --format markdown --output ./comments.md
+python scripts/scrape_article_comments.py --url "<url>" --scroll-timeout 60 --dry-run  # 环境检测
+```
+
+| 参数 | 说明 | 默认值 |
+|------|------|--------|
+| `--url` / `-u` | 文章 URL | 必填 |
+| `--output` / `-o` | 输出路径 | 自动生成到桌面 |
+| `--format` / `-f` | `json` 或 `markdown` | `markdown` |
+| `--scroll-timeout` | 滚动超时秒数 | 120 |
+| `--no-close` | 采集后不关闭浏览器 | false |
+| `--dry-run` | 仅检测环境 | false |
+
 ---
 
 ## 最佳实践
@@ -231,4 +250,4 @@ import re, json
 | Browser Bridge 扩展 | — | OpenCLI 的 Chrome 连接器 |
 | agent-browser | — | 文章评论 DOM 提取（轨二） |
 | Edge 浏览器 | — | 复用用户登录态 |
-| Python 3 | — | 后处理和格式化 |
+| Python 3 | ≥ 3.7 | 后处理和格式化，`scrape_article_comments.py` |
